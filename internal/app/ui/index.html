@@ -1,0 +1,586 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>sbot</title>
+<style>
+:root {
+  --bg: #f4f5f7; --card: #fff; --fg: #1d2330; --muted: #6b7280; --line: #dde1e7;
+  --accent: #2563eb; --ok: #16a34a; --warn: #d97706; --bad: #dc2626; --btn: #eef1f6;
+  --pad: 56px;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #111418; --card: #1b2027; --fg: #e6e9ee; --muted: #9aa3af; --line: #2c333d;
+    --accent: #60a5fa; --ok: #4ade80; --warn: #fbbf24; --bad: #f87171; --btn: #262d37; }
+}
+@media (max-width: 420px) { :root { --pad: 48px; } }
+* { box-sizing: border-box; }
+body { margin: 0; font: 15px/1.4 system-ui, sans-serif; background: var(--bg); color: var(--fg); }
+header { display: flex; align-items: center; gap: 12px; padding: 8px 16px; border-bottom: 1px solid var(--line); background: var(--card); }
+header h1 { font-size: 18px; margin: 0; }
+header .conn { color: var(--muted); font-size: 13px; margin-left: auto; }
+main { max-width: 1100px; margin: 0 auto; padding: 12px 16px; display: grid; gap: 12px; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 12px; }
+.card h2 { font-size: 15px; margin: 0 0 8px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.dot { width: 10px; height: 10px; border-radius: 50%; background: var(--bad); display: inline-block; flex: none; }
+.dot.on { background: var(--ok); }
+.muted { color: var(--muted); font-size: 13px; font-weight: normal; }
+.row { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin: 6px 0; }
+button { font: inherit; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--btn); color: var(--fg); cursor: pointer; touch-action: manipulation; }
+button:active, button.held { background: var(--accent); color: #fff; }
+button:disabled { opacity: .45; cursor: default; }
+input[type=text], select { font: inherit; padding: 6px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--fg); }
+
+/* cockpit: the video with the pads next to it (under it on a phone) */
+.cockpit { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: start; }
+@media (max-width: 760px) { .cockpit { grid-template-columns: 1fr; } }
+.video { position: relative; width: 100%; aspect-ratio: 4/3; background: #000; border-radius: 10px; overflow: hidden; display: grid; place-items: center; color: #999; }
+.video img { width: 100%; height: 100%; object-fit: contain; }
+.video img.mirror { transform: scaleX(-1); }
+.overlay { position: absolute; display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.overlay.top { top: 8px; left: 8px; right: 8px; }
+.overlay.bottom { bottom: 8px; left: 8px; right: 8px; justify-content: flex-end; }
+.badge { background: rgba(0,0,0,.6); color: #fff; padding: 3px 8px; border-radius: 6px; font-size: 13px; font-variant-numeric: tabular-nums; }
+.badge.bad { background: var(--bad); font-weight: 600; }
+.overlay button { background: rgba(0,0,0,.55); color: #fff; border-color: rgba(255,255,255,.25); padding: 4px 8px; font-size: 13px; }
+.side { display: grid; gap: 10px; }
+.pads { display: flex; gap: 14px; flex-wrap: wrap; }
+.padbox h3 { margin: 0 0 4px; font-size: 13px; color: var(--muted); font-weight: 600; }
+.pad { display: grid; grid-template-columns: repeat(3, var(--pad)); grid-template-rows: repeat(3, var(--pad)); gap: 5px; user-select: none; -webkit-user-select: none; }
+.pad button { font-size: 20px; padding: 0; touch-action: none; }
+.pad button.small { font-size: 12px; }
+.joy { position: relative; width: calc(var(--pad) * 3 + 10px); height: calc(var(--pad) * 3 + 10px); border-radius: 50%;
+  background: radial-gradient(circle, var(--btn) 0 18%, transparent 19%), var(--btn); border: 2px solid var(--line);
+  touch-action: none; user-select: none; -webkit-user-select: none; cursor: grab; }
+.joy.off { opacity: .45; cursor: default; }
+.joy .knob { position: absolute; left: 50%; top: 50%; width: calc(var(--pad) * 1.1); height: calc(var(--pad) * 1.1); border-radius: 50%;
+  transform: translate(-50%, -50%); background: var(--accent); box-shadow: 0 2px 6px rgba(0,0,0,.3); pointer-events: none; }
+.joy.active .knob { transition: none; }
+.joy:not(.active) .knob { transition: transform .12s ease-out; }
+.swatches { display: flex; gap: 5px; flex-wrap: wrap; align-items: center; }
+.sw { width: 34px; height: 30px; padding: 0; border-radius: 8px; border: 2px solid var(--line); }
+.sw.off { font-size: 11px; }
+.lights h3 { margin: 6px 0 2px; font-size: 13px; color: var(--muted); font-weight: 600; }
+details > summary { cursor: pointer; font-weight: 600; }
+.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; margin-top: 8px; }
+.sensors { display: grid; grid-template-columns: auto 1fr; gap: 3px 12px; font-variant-numeric: tabular-nums; font-size: 14px; }
+.sensors div:nth-child(odd) { color: var(--muted); }
+.chip { display: inline-block; min-width: 26px; text-align: center; padding: 1px 6px; border-radius: 6px; background: var(--btn); }
+.chip.on { background: var(--accent); color: #fff; }
+.events { font-size: 13px; max-height: 220px; overflow: auto; font-variant-numeric: tabular-nums; }
+.events div { padding: 2px 0; border-bottom: 1px solid var(--line); }
+.events .sent { color: var(--muted); }
+kbd { font: 12px ui-monospace, monospace; padding: 1px 5px; border: 1px solid var(--line); border-radius: 4px; }
+</style>
+</head>
+<body>
+<header><h1>sbot</h1><span class="conn" id="conn">connecting…</span></header>
+<main id="main"></main>
+
+<script>
+"use strict";
+const robots = new Map();   // id -> view
+const events = [];          // newest first
+const cams = new Map();     // id -> {ws, img, url}
+const snaps = new Map();    // id -> time of the latest snapshot
+const openMore = new Set(); // robot ids whose "More" section is open
+const store = {             // per-browser preferences; storage may be unavailable
+  get(k, d) { try { const v = localStorage.getItem("sbot." + k); return v === null ? d : JSON.parse(v); } catch { return d; } },
+  set(k, v) { try { localStorage.setItem("sbot." + k, JSON.stringify(v)); } catch {} },
+};
+let speed = store.get("speed", 60);
+
+const $ = (sel, el = document) => el.querySelector(sel);
+const h = (tag, attrs = {}, ...kids) => {
+  const el = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (v === null || v === undefined || v === false) continue;
+    if (k.startsWith("on")) el.addEventListener(k.slice(2), v);
+    else if (k === "class") el.className = v;
+    else el.setAttribute(k, v);
+  }
+  for (const k of kids) if (k !== "" && k !== null && k !== undefined) el.append(k);
+  return el;
+};
+
+async function command(id, command, args) {
+  const r = await fetch(`/api/robots/${encodeURIComponent(id)}/command`, {
+    method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({command, args}),
+  });
+  if (!r.ok && command !== "car_drive" && command !== "look") console.warn(command, r.status, await r.text());
+}
+
+/* ------------------------------- layout -------------------------------- */
+
+function render() {
+  const main = $("#main");
+  main.replaceChildren();
+  const list = [...robots.values()];
+  if (list.length === 0) {
+    main.append(h("div", {class: "card"},
+      h("h2", {}, "No robot paired"),
+      h("p", {}, "On Stack-chan, open Embody Mode, swipe up and tap QR, then Next until Sbot shows, and Connect. Scan the QR code with your phone, or type the code shown under it:"),
+      pairForm()));
+    return;
+  }
+  const hosts = list.filter(r => !r.with || !robots.has(r.with));
+  for (const r of hosts) main.append(hostCard(r, list.filter(c => c.with === r.id)));
+  main.append(h("details", {class: "card"}, h("summary", {}, "Events"), h("div", {class: "events", id: "events"})),
+              h("details", {class: "card"}, h("summary", {}, "Pair another device"), pairForm()));
+  renderEvents();
+  for (const r of list) updateTelemetry(r.id);
+}
+
+function pairForm() {
+  const input = h("input", {type: "text", placeholder: "code, e.g. ABCD2345", size: 14});
+  return h("div", {class: "row"}, input,
+    h("button", {onclick: () => { if (input.value.trim()) location.href = "/pair?code=" + encodeURIComponent(input.value.trim()); }}, "Pair"));
+}
+
+// One robot with what belongs to it: the cockpit on top, the rest under "More".
+function hostCard(r, linked) {
+  const cars = (r.car ? [r] : []).concat(linked.filter(c => c.car));
+  const car = cars.find(carOnline) || cars[0];
+  const title = h("h2", {}, h("span", {class: "dot" + (r.online ? " on" : "")}), r.name,
+    r.room ? h("span", {class: "muted"}, "in " + r.room) : "",
+    h("span", {class: "muted"}, [r.id, r.firmware].filter(Boolean).join(" · ") + (r.online ? "" : " · offline")));
+
+  const side = h("div", {class: "side"},
+    h("div", {class: "pads"}, car ? carJoystick(car) : "", car ? carPad(car) : "", r.commands.includes("look") ? headPad(r) : ""),
+    lightsBox(r, car));
+  const top = r.camera ? h("div", {class: "cockpit"}, videoBox(r, car), side) : side;
+
+  const more = h("details", {open: openMore.has(r.id) ? "" : null, ontoggle: e => e.target.open ? openMore.add(r.id) : openMore.delete(r.id)},
+    h("summary", {}, "More"),
+    h("div", {class: "grid2"},
+      ...cars.map(c => carDetails(c)),
+      robotDetails(r)));
+  return h("div", {class: "card"}, title, top, more);
+}
+
+/* -------------------------------- video -------------------------------- */
+
+// The stream comes mirrored from the robot (snapshots do not); shown the right way round by default.
+let mirror = store.get("mirror", true);
+
+function videoBox(r, car) {
+  const cam = cams.get(r.id);
+  if (!cam && r.online && store.get("autoCam", true)) setTimeout(() => { if (!cams.has(r.id) && robots.get(r.id)?.online) { toggleCam(r.id); render(); } });
+  const box = h("div", {class: "video"});
+  if (cam) { cam.img.classList.toggle("mirror", mirror); box.append(cam.img); }
+  else box.append(r.online ? "camera off" : "robot offline");
+  const top = h("div", {class: "overlay top"});
+  if (car) top.append(h("span", {class: "badge", "data-car-badge": car.id}, "–"));
+  box.append(top);
+  const bottom = h("div", {class: "overlay bottom"},
+    h("button", {disabled: r.online ? null : "", onclick: () => { toggleCam(r.id); store.set("autoCam", cams.has(r.id)); render(); }}, cam ? "Camera off" : "Camera on"),
+    h("button", {onclick: () => { mirror = !mirror; store.set("mirror", mirror); render(); }}, mirror ? "Mirror: as seen" : "Mirror: raw"));
+  if (r.commands.includes("snapshot")) bottom.append(h("button", {disabled: r.online ? null : "", onclick: () => command(r.id, "snapshot")}, "Snapshot"));
+  box.append(bottom);
+  return h("div", {}, box, h("div", {"data-snap": r.id}, snaps.has(r.id) ? snapImg(r.id) : ""));
+}
+
+function snapImg(id) {
+  const src = `/api/robots/${encodeURIComponent(id)}/snapshot?t=${snaps.get(id)}`;
+  return h("a", {href: src, download: id + ".jpg"}, h("img", {src, alt: "snapshot", style: "width:100%;max-width:640px;border-radius:8px;margin-top:8px"}));
+}
+
+function toggleCam(id) {
+  const cam = cams.get(id);
+  if (cam) { cam.ws.close(); if (cam.url) URL.revokeObjectURL(cam.url); cams.delete(id); return; }
+  const proto = location.protocol === "https:" ? "wss:" : "ws:";
+  const ws = new WebSocket(`${proto}//${location.host}/api/robots/${encodeURIComponent(id)}/media?video=1`);
+  ws.binaryType = "arraybuffer";
+  const c = {ws, img: h("img", {alt: "camera"}), url: null};
+  ws.onmessage = ev => {
+    const b = new Uint8Array(ev.data);
+    if (b[0] !== 0x01) return;
+    const url = URL.createObjectURL(new Blob([b.subarray(1)], {type: "image/jpeg"}));
+    c.img.src = url;
+    if (c.url) URL.revokeObjectURL(c.url);
+    c.url = url;
+  };
+  ws.onclose = () => { if (cams.get(id) === c) { cams.delete(id); render(); } };
+  cams.set(id, c);
+}
+
+/* --------------------------------- pads --------------------------------- */
+
+// A button that acts while held: start on press, stop on release (or when the pointer leaves).
+function holdButton(label, title, start, stop, disabled, cls) {
+  const b = h("button", {title, class: cls || null, disabled: disabled ? "" : null});
+  b.textContent = label;
+  b.addEventListener("pointerdown", ev => { ev.preventDefault(); b.setPointerCapture?.(ev.pointerId); b.classList.add("held"); start(); });
+  const end = () => { if (!b.classList.contains("held")) return; b.classList.remove("held"); stop(); };
+  for (const e of ["pointerup", "pointercancel", "lostpointercapture"]) b.addEventListener(e, end);
+  return b;
+}
+
+const carDirs = [  // [label, left, right] as a share of speed
+  ["↖", 0.4, 1], ["↑", 1, 1], ["↗", 1, 0.4],
+  ["⟲", -0.6, 0.6], ["■", 0, 0], ["⟳", 0.6, -0.6],
+  ["↙", -0.4, -1], ["↓", -1, -1], ["↘", -1, -0.4],
+];
+const driving = new Map(); // car id -> {l, r, timer}
+
+// A car hosted by a robot (Stack-chan over BLE) reports car_connected; a bridge is the car itself.
+const carWasOnline = new Map(); // car id -> carOnline at the last telemetry
+function carOnline(c) { return c.online && c.telemetry?.car_connected !== 0; }
+
+function drive(id, l, r) {
+  const d = driving.get(id);
+  if (d) clearInterval(d.timer);
+  if (l === 0 && r === 0) { driving.delete(id); command(id, "car_stop"); return; }
+  const send = () => command(id, "car_drive", {left: Math.round(l * speed), right: Math.round(r * speed)});
+  send();
+  driving.set(id, {l, r, timer: setInterval(send, 100)});  // the micro:bit stops 500 ms after the last one
+}
+
+function carPad(c) {
+  const online = carOnline(c);
+  const pad = h("div", {class: "pad"});
+  for (const [label, l, r] of carDirs) {
+    pad.append(label === "■"
+      ? h("button", {title: "stop (space)", disabled: online ? null : "", onclick: () => drive(c.id, 0, 0)}, "■")
+      : holdButton(label, "drive", () => drive(c.id, l, r), () => drive(c.id, 0, 0), !online));
+  }
+  const out = h("span", {}, speed + "%");
+  return h("div", {class: "padbox"},
+    h("h3", {}, "Car ", h("kbd", {}, "WASD")),
+    pad,
+    h("div", {class: "row"}, h("input", {type: "range", min: 20, max: 100, step: 10, value: speed, style: "width: 120px",
+      oninput: e => { speed = +e.target.value; out.textContent = speed + "%"; store.set("speed", speed); }}), out));
+}
+
+// Joystick: the knob's distance from the center is the speed (up to the speed slider),
+// its direction steers ("arcade" mixing: up is forward, sideways turns). Letting go stops.
+const joyDeadZone = 0.12;
+const joyTurn = 0.6;  // sideways share: full sideways spins on the spot at 60 %, diagonals curve gently
+
+function joyToWheels(x, y) {  // x right, y forward, both -1..1, inside the unit circle
+  const m = Math.hypot(x, y);
+  if (m < joyDeadZone) return [0, 0];
+  const k = (m - joyDeadZone) / (1 - joyDeadZone) / m;  // the speed grows from the dead zone's edge
+  x *= k * joyTurn; y *= k;
+  let l = y + x, r = y - x;
+  const big = Math.max(1, Math.abs(l), Math.abs(r));
+  return [l / big, r / big];
+}
+
+function carJoystick(c) {
+  const online = carOnline(c);
+  const knob = h("div", {class: "knob"});
+  const joy = h("div", {class: "joy" + (online ? "" : " off"), title: "drag to drive, let go to stop"}, knob);
+  let pointer = null, timer = null, wheels = [0, 0];
+  const send = () => command(c.id, "car_drive", {left: Math.round(wheels[0] * speed), right: Math.round(wheels[1] * speed)});
+  const move = ev => {
+    const b = joy.getBoundingClientRect();
+    const radius = b.width / 2;
+    let x = (ev.clientX - b.left - radius) / radius, y = -(ev.clientY - b.top - radius) / radius;
+    const m = Math.hypot(x, y);
+    if (m > 1) { x /= m; y /= m; }
+    knob.style.transform = `translate(calc(-50% + ${x * radius * 0.78}px), calc(-50% + ${-y * radius * 0.78}px))`;
+    wheels = joyToWheels(x, y);
+  };
+  const end = () => {
+    if (pointer === null) return;
+    pointer = null;
+    clearInterval(timer);
+    joy.classList.remove("active");
+    knob.style.transform = "";
+    wheels = [0, 0];
+    command(c.id, "car_stop");
+  };
+  joy.addEventListener("pointerdown", ev => {
+    if (!online || pointer !== null) return;
+    ev.preventDefault();
+    pointer = ev.pointerId;
+    joy.setPointerCapture?.(ev.pointerId);
+    joy.classList.add("active");
+    move(ev);
+    send();
+    timer = setInterval(send, 100);  // the micro:bit stops 500 ms after the last one
+  });
+  joy.addEventListener("pointermove", ev => { if (ev.pointerId === pointer) move(ev); });
+  for (const e of ["pointerup", "pointercancel", "lostpointercapture"]) joy.addEventListener(e, ev => { if (ev.pointerId === pointer) end(); });
+  return h("div", {class: "padbox"}, h("h3", {}, "Joystick"), joy);
+}
+
+// Head: the robot keeps the angle; the pad steps the target while held.
+const headSteps = {"▲": [0, 5], "▼": [0, -5], "◀": [-8, 0], "▶": [8, 0]};
+const heads = new Map(); // robot id -> {yaw, pitch, at, timer}
+
+function headStep(id, dy, dp) {
+  const r = robots.get(id);
+  let t = heads.get(id);
+  if (!t || Date.now() - t.at > 3000) {  // idle a while: start from where the head really is
+    t = {yaw: r?.telemetry?.head_yaw_deg ?? 0, pitch: r?.telemetry?.head_pitch_deg ?? 15};
+  }
+  t.yaw = Math.max(-90, Math.min(90, t.yaw + dy));
+  t.pitch = Math.max(5, Math.min(85, t.pitch + dp));  // M5Stack: keep the pitch servo within 5..85°
+  t.at = Date.now();
+  heads.set(id, t);
+  command(id, "look", {yaw: Math.round(t.yaw), pitch: Math.round(t.pitch)});
+}
+
+function headHold(id, dy, dp) {
+  headStep(id, dy, dp);
+  const t = heads.get(id);
+  clearInterval(t.timer);
+  t.timer = setInterval(() => headStep(id, dy, dp), 150);
+}
+function headRelease(id) { const t = heads.get(id); if (t) clearInterval(t.timer); }
+
+function headPad(r) {
+  const off = !r.online;
+  const has = c => r.commands.includes(c);
+  const cell = (label) => {
+    const [dy, dp] = headSteps[label];
+    return holdButton(label, "move the head", () => headHold(r.id, dy, dp), () => headRelease(r.id), off);
+  };
+  const act = (label, cmd, title) => has(cmd)
+    ? h("button", {class: "small", title, disabled: off ? "" : null, onclick: () => { heads.delete(r.id); command(r.id, cmd); }}, label)
+    : h("span", {});
+  const pad = h("div", {class: "pad"},
+    act("nod", "nod", "nod"), cell("▲"), act("shake", "shake", "shake"),
+    cell("◀"), act("●", "home", "home: look straight ahead"), cell("▶"),
+    h("span", {}), cell("▼"), h("span", {}));
+  return h("div", {class: "padbox"}, h("h3", {}, "Head ", h("kbd", {}, "arrows")), pad);
+}
+
+/* -------------------------------- lights -------------------------------- */
+
+// LED colors as the pet tuned them by eye on the robot (green is strong, full power is pastel).
+const ledColors = [["white", "#b3b3b3", "#f5f5f5"], ["red", "#b20507", "#e53935"], ["yellow", "#b38f00", "#fdd835"],
+                   ["green", "#28b22e", "#43a047"], ["blue", "#020fb2", "#1e5be5"], ["purple", "#5000b3", "#9c27b0"]];
+// The TPBot's headlights take plain RGB.
+const carColors = [["white", "#ffffff"], ["red", "#ff0000"], ["yellow", "#ffb000"], ["green", "#00ff00"], ["blue", "#0000ff"], ["purple", "#a000ff"]];
+let ledColor = store.get("ledColor", "#b3b3b3");
+
+function swatch(name, shown, onclick, disabled) {
+  return h("button", {class: "sw", title: name, style: `background:${shown}`, disabled: disabled ? "" : null, onclick});
+}
+
+function lightsBox(r, car) {
+  const box = h("div", {class: "lights"});
+  if (r.commands.includes("leds")) {
+    const off = !r.online;
+    const row = h("div", {class: "swatches"},
+      h("button", {class: "sw off", title: "off", disabled: off ? "" : null, onclick: async () => {
+        await command(r.id, "leds", {effect: "off"});
+        command(r.id, "leds", {left: "#000000", right: "#000000"});
+      }}, "off"));
+    for (const [name, led, shown] of ledColors) {
+      row.append(swatch(name, shown, () => { ledColor = led; store.set("ledColor", led); command(r.id, "leds", {left: led, right: led}); }, off));
+    }
+    for (const fx of ["rainbow", "breathe", "chase", "blink"]) {
+      row.append(h("button", {disabled: off ? "" : null, onclick: () => command(r.id, "leds", {effect: fx, color: ledColor, speed: 1, seconds: 0})}, fx));
+    }
+    box.append(h("h3", {}, "Robot lights"), row);
+  }
+  if (car) {
+    const off = !carOnline(car);
+    const row = h("div", {class: "swatches"},
+      h("button", {class: "sw off", title: "off", disabled: off ? "" : null, onclick: () => command(car.id, "car_headlights", {color: "#000000"})}, "off"));
+    for (const [name, rgb] of carColors) row.append(swatch(name, rgb, () => command(car.id, "car_headlights", {color: rgb}), off));
+    box.append(h("h3", {}, "Car headlights"), row);
+  }
+  return box;
+}
+
+/* ------------------------------- details -------------------------------- */
+
+function carDetails(c) {
+  const online = carOnline(c);
+  const hosted = c.commands.includes("car_enable");
+  const s = h("div", {class: "sensors", "data-car": c.id},
+    h("div", {}, "Sonar"), h("div", {"data-k": "sonar"}, "–"),
+    h("div", {}, "Line"), h("div", {}, h("span", {class: "chip", "data-k": "car_line_l"}, "L"), " ", h("span", {class: "chip", "data-k": "car_line_r"}, "R")),
+    h("div", {}, "Buttons"), h("div", {}, h("span", {class: "chip", "data-k": "car_btn_a"}, "A"), " ", h("span", {class: "chip", "data-k": "car_btn_b"}, "B")),
+    h("div", {}, "Motors"), h("div", {"data-k": "motors"}, "–"),
+    h("div", {}, "Link"), h("div", {class: "muted", "data-k": "link"}, "–"),
+    h("div", {}, ""), h("div", {style: "color: var(--warn)", "data-k": "wd"}, ""));
+  return h("div", {},
+    h("h2", {}, h("span", {class: "dot" + (online ? " on" : "")}), hosted ? "Car (BLE)" : c.name,
+      h("span", {class: "muted"}, hosted
+        ? (online ? "connected" : c.online ? "looking for TPB-* (one press on the TPBot: green)" : "offline")
+        : [c.model, c.firmware].filter(Boolean).join(" · ") + (c.online ? "" : " · offline"))),
+    c.safety ? safetyRow(c) : "", s, hosted ? "" : nameForm(c));
+}
+
+// The server-side safety stop: no forward driving while the sonar sees something closer.
+function safetyRow(c) {
+  const sel = h("select", {onchange: async e => {
+    const r = await fetch(`/api/robots/${encodeURIComponent(c.id)}/safety`, {method: "POST",
+      headers: {"Content-Type": "application/json"}, body: JSON.stringify({cm: +e.target.value})});
+    if (!r.ok) console.warn("safety", r.status, await r.text());
+  }});
+  for (const cm of c.safety.choices) sel.append(h("option", {value: cm, selected: cm === c.safety.limit_cm ? "" : null}, cm ? cm + " cm" : "off"));
+  return h("div", {class: "row"}, "Safety stop", sel,
+    h("span", {class: "muted"}, c.safety.limit_cm ? "no forward driving closer than this" : "off: the car may drive into things"));
+}
+
+function robotDetails(r) {
+  const has = c => r.commands.includes(c);
+  const box = h("div", {}, h("h2", {}, "Robot"));
+  const t = r.telemetry || {};
+  const status = [t.battery_pct !== undefined ? "battery " + Math.round(t.battery_pct) + "%" + (t.charging ? " (charging)" : "") : "",
+                  t.wifi_rssi_dbm ? "Wi-Fi " + t.wifi_rssi_dbm + " dBm" : ""].filter(Boolean).join(" · ");
+  if (status) box.append(h("div", {class: "muted"}, status));
+  if (has("emotion")) {
+    const row = h("div", {class: "row"});
+    for (const e of ["happy", "neutral", "sad", "angry", "doubt", "sleepy"]) row.append(h("button", {disabled: r.online ? null : "", onclick: () => command(r.id, "emotion", {name: e})}, e));
+    box.append(row);
+  }
+  if (has("car_enable")) box.append(h("div", {class: "row"}, "TPBot car over BLE",
+    h("button", {disabled: r.online ? null : "", onclick: () => {
+      if (!r.car || confirm("Turn the car off? " + r.name + " registers again without the car commands.")) command(r.id, "car_enable", {on: !r.car});
+    }}, r.car ? "on: turn off" : "off: turn on")));
+  box.append(serverSwitch(r), nameForm(r));
+  return box;
+}
+
+// The home model's words for a device: its name and room.
+function nameForm(r) {
+  const name = h("input", {type: "text", value: r.name === r.id ? "" : r.name, placeholder: "name, e.g. Kitchen robot", size: 16});
+  const room = h("input", {type: "text", value: r.room || "", placeholder: "room", size: 10});
+  return h("div", {class: "row"}, "Name", name, room,
+    h("button", {onclick: async () => {
+      const resp = await fetch(`/api/robots/${encodeURIComponent(r.id)}/name`, {method: "POST",
+        headers: {"Content-Type": "application/json"}, body: JSON.stringify({name: name.value, room: room.value})});
+      if (!resp.ok) console.warn("name", resp.status, await resp.text());
+    }}, "Save"));
+}
+
+const nameOf = id => robots.get(id)?.name || id;
+
+// The robot's server list (its "servers" event): switch it back to another server.
+function serverSwitch(r) {
+  let list = r.servers?.list;
+  if (typeof list === "string") try { list = JSON.parse(list); } catch { list = null; }
+  if (!r.online || !r.commands.includes("server_switch") || !Array.isArray(list)) return "";
+  const sel = h("select", {});
+  for (const s of list) if (s.url !== r.servers.current) sel.append(h("option", {value: s.url}, s.name));
+  if (!sel.options.length) return "";
+  return h("div", {class: "row muted"}, "Move robot to", sel,
+    h("button", {onclick: () => { if (confirm("Move " + r.name + " to " + sel.selectedOptions[0].text + "? It leaves sbot.")) command(r.id, "server_switch", {server: sel.value}); }}, "Switch"));
+}
+
+function updateTelemetry(id) {
+  const r = robots.get(id);
+  if (!r) return;
+  const t = r.telemetry || {};
+  const us = t.car_echo_us || 0;
+  const online = carOnline(r);
+  const badge = document.querySelector(`[data-car-badge="${CSS.escape(id)}"]`);
+  if (badge) {
+    const blocked = r.safety?.active;
+    badge.className = "badge" + (blocked ? " bad" : "");
+    badge.textContent = !online ? "car not connected"
+      : (blocked ? "Obstacle " : "Sonar ") + (us ? (us / 58).toFixed(0) + " cm" : "–") + (blocked ? ": forward blocked" : "")
+        + (t.car_left || t.car_right ? `  ·  motors ${t.car_left}/${t.car_right}` : "");
+  }
+  const box = document.querySelector(`[data-car="${CSS.escape(id)}"]`);
+  if (box) {
+    const set = (k, f) => { const el = $(`[data-k="${k}"]`, box); if (el) f(el); };
+    set("sonar", el => el.textContent = us ? `${(us / 58).toFixed(1)} cm (${us} µs)` : "–");
+    for (const k of ["car_line_l", "car_line_r", "car_btn_a", "car_btn_b"]) set(k, el => el.classList.toggle("on", t[k] === 1));
+    set("motors", el => el.textContent = `${t.car_left ?? "–"} / ${t.car_right ?? "–"}`);
+    set("wd", el => el.textContent = t.car_watchdog_stop ? "the watchdog stopped the motors" : "");
+    set("link", el => el.textContent = [t.car_rssi_dbm ? t.car_rssi_dbm + " dBm" : "", "board " + (["both", "V1", "V2"][t.car_board] ?? "?"),
+      "I²C errors " + (t.car_i2c_errors ?? "–")].filter(Boolean).join(" · "));
+  }
+  if (r.car) {
+    const prev = carWasOnline.get(id);
+    carWasOnline.set(id, online);
+    if (prev !== undefined && prev !== online) render();  // enable or disable the controls
+  }
+}
+
+/* ------------------------------ keyboard -------------------------------- */
+
+// WASD drives the first connected car, the arrow keys move the first robot's head, space stops.
+const keyDirs = {w: [1, 1], s: [-1, -1], a: [-0.6, 0.6], d: [0.6, -0.6]};
+const keyHead = {arrowup: "▲", arrowdown: "▼", arrowleft: "◀", arrowright: "▶"};
+const keysDown = new Set();
+function keyCar() { return [...robots.values()].find(r => r.car && carOnline(r))?.id; }
+function keyRobot() { return [...robots.values()].find(r => r.online && r.commands.includes("look"))?.id; }
+function keyDrive() {
+  const id = keyCar();
+  if (!id) return;
+  let l = 0, r = 0;
+  for (const k of keysDown) if (keyDirs[k]) { l += keyDirs[k][0]; r += keyDirs[k][1]; }
+  drive(id, Math.max(-1, Math.min(1, l)), Math.max(-1, Math.min(1, r)));
+}
+addEventListener("keydown", e => {
+  if (e.target.tagName === "INPUT" && e.target.type === "text" || e.target.tagName === "SELECT") return;
+  const k = e.key.toLowerCase();
+  if (k === " ") { keysDown.clear(); keyDrive(); e.preventDefault(); return; }
+  if (keyHead[k]) {
+    e.preventDefault();
+    const id = keyRobot();
+    if (id && !e.repeat) { const [dy, dp] = headSteps[keyHead[k]]; headHold(id, dy, dp); }
+    return;
+  }
+  if (!keyDirs[k] || e.repeat) return;
+  e.preventDefault();
+  keysDown.add(k); keyDrive();
+});
+addEventListener("keyup", e => {
+  const k = e.key.toLowerCase();
+  if (keyHead[k]) { const id = keyRobot(); if (id) headRelease(id); return; }
+  if (keysDown.delete(k)) keyDrive();
+});
+addEventListener("blur", () => {
+  if (keysDown.size) { keysDown.clear(); keyDrive(); }
+  for (const id of heads.keys()) headRelease(id);
+});
+
+/* ------------------------------- events -------------------------------- */
+
+function renderEvents() {
+  const box = $("#events");
+  if (!box) return;
+  box.replaceChildren(...events.slice(0, 40).map(e =>
+    h("div", {class: e.sent ? "sent" : ""}, new Date(e.ts).toLocaleTimeString(), " ", nameOf(e.robot), " ", e.sent ? "→ " : "", e.name,
+      e.data ? " " + JSON.stringify(e.data) : "")));
+}
+
+function connect() {
+  const es = new EventSource("/api/events");
+  es.onopen = () => $("#conn").textContent = "live";
+  es.onerror = () => $("#conn").textContent = "reconnecting…";
+  es.addEventListener("robot", ev => {
+    const v = JSON.parse(ev.data);
+    const old = robots.get(v.id);
+    robots.set(v.id, v);
+    if (!old) for (const e of v.events) events.unshift(e);
+    events.sort((a, b) => b.ts.localeCompare(a.ts));
+    render();
+  });
+  es.addEventListener("telemetry", ev => {
+    const t = JSON.parse(ev.data);
+    const r = robots.get(t.robot);
+    if (!r) return;
+    Object.assign(r.telemetry, t.m);
+    updateTelemetry(t.robot);
+  });
+  es.addEventListener("snapshot", ev => {
+    const s = JSON.parse(ev.data);
+    snaps.set(s.robot, Date.parse(s.ts));
+    const box = document.querySelector(`[data-snap="${CSS.escape(s.robot)}"]`);
+    if (box) box.replaceChildren(snapImg(s.robot));
+  });
+  es.addEventListener("robot_event", ev => {
+    events.unshift(JSON.parse(ev.data));
+    renderEvents();
+  });
+}
+
+if (new URLSearchParams(location.search).has("paired")) history.replaceState(null, "", "/");
+render();
+connect();
+</script>
+</body>
+</html>
