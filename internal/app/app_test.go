@@ -40,7 +40,7 @@ func dialWorker(t *testing.T, srv *httptest.Server, id string, caps wire.RobotCa
 	t.Helper()
 	h := http.Header{}
 	h.Set("Authorization", "Bearer "+testToken)
-	h.Set(wire.WorkerIDHeader, id)
+	h.Set(wire.DeviceIDHeader, id)
 	ws, _, err := websocket.DefaultDialer.Dial("ws"+strings.TrimPrefix(srv.URL, "http")+wire.ConnectPath, h)
 	if err != nil {
 		t.Fatal(err)
