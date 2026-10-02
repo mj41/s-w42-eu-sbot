@@ -4,7 +4,7 @@ go 1.26.0
 
 require (
 	github.com/gorilla/websocket v1.5.3
-	github.com/mj41/stackchan-server v0.0.0
+	github.com/mj41/stackchan-server v0.3.0
 	github.com/nats-io/nats-server/v2 v2.15.0
 	github.com/nats-io/nats.go v1.54.0
 )
@@ -21,6 +21,3 @@ require (
 	golang.org/x/sys v0.48.0 // indirect
 	golang.org/x/time v0.16.0 // indirect
 )
-
-// Until stackchan-server is pushed with the public wire package.
-replace github.com/mj41/stackchan-server => ../stackchan-server

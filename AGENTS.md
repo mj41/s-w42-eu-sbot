@@ -3,7 +3,7 @@
 Embody Mode app server for a Stack-chan plus linked devices (first: a TPBot car via `../tpbot-ble`). See [readme.md](readme.md).
 
 - Workspace notes for the whole Stack-chan effort are in `../stackchan-mj/AGENTS.md`. Read them first.
-- Go only: the standard library plus gorilla/websocket. The protocol comes from `github.com/mj41/stackchan-server/wire` (`replace` to `../stackchan-server`).
+- Go only: the standard library plus gorilla/websocket and NATS (embedded JetStream). The protocol comes from `github.com/mj41/stackchan-server/wire` (v0.3.0 in `go.mod`; an uncommitted `go.work` tries both together).
 - The car is optional: a Stack-chan without a car must work as before. Car support keys off the `car_*` commands, never the model name, so the later "Stack-chan hosts the car" step needs no change here.
 - The car capability (command and telemetry names) is shared with `tpbot-ble/cmd/tpbot-bridge`: change both readmes together.
 - Primary data only: show raw values; derived reactions (obstacle, line following) are app logic and must be explicit.
