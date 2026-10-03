@@ -13,7 +13,7 @@ import (
 	"github.com/mj41/stackchan-server/wire"
 )
 
-// A Stack-chan hosting the car, as with car_enable: car commands and a face.
+// A Stackchan hosting the car, as with car_enable: car commands and a face.
 var hostedCaps = wire.RobotCapabilities{Model: "stackchan-cores3", Commands: []string{"car_drive", "car_stop", "emotion", "nod"}}
 
 func newHubApp(t *testing.T, grants map[string][]string) (*App, *httptest.Server, *hub.Hub) {

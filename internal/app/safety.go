@@ -7,7 +7,7 @@ import (
 
 // Safety stop: no forward driving while the car's sonar sees something closer
 // than the car's limit. It works on the raw car_echo_us telemetry (cm ≈ µs / 58),
-// for any car worker: tpbot-bridge or a Stack-chan hosting the car.
+// for any car worker: tpbot-bridge or a Stackchan hosting the car.
 //
 // Backward and turning on the spot stay allowed, so the car can always get away.
 // An echo of 0 means no echo (nothing in range, a missed echo, or the sonar is off):

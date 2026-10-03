@@ -1,4 +1,4 @@
-// Package app is sbot: an Embody Mode app server that manages a Stack-chan
+// Package app is sbot: an Embody Mode app server that manages a Stackchan
 // and the devices that work with it, starting with a TPBot car.
 //
 // Every device is a "robot" worker (stackchan-server wire protocol). A worker
@@ -105,7 +105,6 @@ func New(cfg Config) *App {
 func (a *App) Handler() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET "+wire.ConnectPath, a.handleRobotConnect)
-	mux.HandleFunc("GET "+wire.LegacyConnectPath, a.handleRobotConnect) // firmware before 2026-10-02
 	mux.HandleFunc("GET /{$}", a.handleIndex)
 	mux.HandleFunc("GET /pair", a.handlePair)
 	mux.HandleFunc("GET /api/robots", a.handleListRobots)

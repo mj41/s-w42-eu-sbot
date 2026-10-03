@@ -120,7 +120,7 @@ function render() {
   if (list.length === 0) {
     main.append(h("div", {class: "card"},
       h("h2", {}, "No robot paired"),
-      h("p", {}, "On Stack-chan, open Embody Mode, swipe up and tap QR, then Next until Sbot shows, and Connect. Scan the QR code with your phone, or type the code shown under it:"),
+      h("p", {}, "On Stackchan, open Embody Mode, swipe up and tap QR, then Next until Sbot shows, and Connect. Scan the QR code with your phone, or type the code shown under it:"),
       pairForm()));
     return;
   }
@@ -224,7 +224,7 @@ const carDirs = [  // [label, left, right] as a share of speed
 ];
 const driving = new Map(); // car id -> {l, r, timer}
 
-// A car hosted by a robot (Stack-chan over BLE) reports car_connected; a bridge is the car itself.
+// A car hosted by a robot (Stackchan over BLE) reports car_connected; a bridge is the car itself.
 const carWasOnline = new Map(); // car id -> carOnline at the last telemetry
 function carOnline(c) { return c.online && c.telemetry?.car_connected !== 0; }
 

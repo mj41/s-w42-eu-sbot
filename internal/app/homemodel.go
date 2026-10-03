@@ -23,7 +23,7 @@ func (r *robot) displayName() string {
 	}
 	switch {
 	case strings.HasPrefix(r.caps.Model, "stackchan"):
-		return "Stack-chan"
+		return "Stackchan"
 	case strings.HasPrefix(r.caps.Model, "tpbot"):
 		return "TPBot car"
 	}

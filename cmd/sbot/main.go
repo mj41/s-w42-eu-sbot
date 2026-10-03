@@ -1,4 +1,4 @@
-// Command sbot is an Embody Mode app server for a Stack-chan and the devices
+// Command sbot is an Embody Mode app server for a Stackchan and the devices
 // that work with it (first: a TPBot car through tpbot-bridge).
 package main
 
