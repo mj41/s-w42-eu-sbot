@@ -2,6 +2,8 @@
 
 An Embody Mode app server for a Stack-chan and the devices that work with it. The first such device is an ELECFREAKS TPBot car with a micro:bit. On one page you see through Stack-chan's camera and drive the car.
 
+Part of [home-w42-eu](https://github.com/mj41/home-w42-eu), a local first, privacy first platform for a home: sbot grows into its home node (web/API server, event hub, controller server). The robot runs Embody Mode from the [StackChan firmware fork](https://github.com/mj41/StackChan/tree/embody-mj41), and the car's micro:bit runs [tpbot-ble](https://github.com/mj41/tpbot-ble).
+
 ```
 micro:bit+TPBot ⇄ BLE ⇄ tpbot-bridge (laptop) ⇄ WS ⇄ sbot ⇄ WS ⇄ Stack-chan
                                                       ⇅ HTTP + SSE
@@ -9,31 +11,37 @@ micro:bit+TPBot ⇄ BLE ⇄ tpbot-bridge (laptop) ⇄ WS ⇄ sbot ⇄ WS ⇄ Sta
 later:  micro:bit+TPBot ⇄ BLE ⇄ Stack-chan ⇄ WS ⇄ sbot       (no bridge)
 ```
 
-Every device is a `robot` worker of the stackchan-server wire protocol (`github.com/mj41/stackchan-server/wire`):
+Every device is a `robot` worker of the [device wire protocol](https://github.com/mj41/home-w42-eu/blob/main/docs/wire-protocol.md), through the `wire` package of [stackchan-server](https://github.com/mj41/stackchan-server):
 
-- **A worker that lists `car_*` commands has a car.** Today that is `tpbot-bridge` (from `../tpbot-ble`). Later it will be Stack-chan itself, listing the same commands and telemetry, and nothing in sbot changes.
+- **A worker that lists `car_*` commands has a car.** Today that is `tpbot-bridge` (from [tpbot-ble](https://github.com/mj41/tpbot-ble)). Later it will be Stack-chan itself, listing the same commands and telemetry, and nothing in sbot changes.
 - **The Register label `with` = `<robot id>` links a device to a robot.** Browsers paired with that robot also see and control the device. The bridge sets it with `-with stackchan-…`.
 - **The car is optional.** A Stack-chan alone works, and so does a car alone (pair it with the URL the bridge logs).
 - **A Stack-chan can host the car itself** over BLE (firmware `CONFIG_STACKCHAN_EMBODY_CAR`). It lists `car_enable`, and the page shows a "Car: off / on" button. While on, it lists the `car_*` commands and telemetry plus `car_connected`. The car panel is live only while `car_connected` is 1. Stop `tpbot-bridge` first, and disconnect the laptop (`bluetoothctl disconnect <addr>`): the micro:bit takes one BLE connection, and BlueZ keeps the link after the bridge exits.
 
-## Run (LAN dev)
+## Run
 
 ```bash
-../stackchan-mj/sbot-bg.sh start|stop|restart|status|log   # :8780, UI read from disk
-../tpbot-ble/build/tpbot-bridge -with stackchan-0a1b2c3d4e50  # car → sbot
+go run ./cmd/sbot -loop-grant frown=emotion    # :8780, with the event hub
+go run ./cmd/sbot-controller -mode shadow       # the loops, decisions only (live: they act)
+
+# the car over this laptop's BLE, linked to a Stack-chan:
+go install github.com/mj41/tpbot-ble/cmd/tpbot-bridge@latest
+tpbot-bridge -with stackchan-0a1b2c3d4e50
 ```
 
-- `stackchan-server` offers sbot to its robots (`~/.config/stackchan-server/dev-server-args`: `-offer Sbot=ws://192.168.1.10:8780,<token file>`). On the robot: QR screen → Next until Sbot → Connect. From the main dashboard: Servers → Switch.
+- **Setting up the robot:** [SETUP.md](https://github.com/mj41/StackChan/blob/embody-mj41/firmware/main/apps/app_embody_mode/SETUP.md) in the firmware fork; for the car, its step 8.
+- **Getting the robot to sbot:** a [stackchan-server](https://github.com/mj41/stackchan-server) offers sbot to its robots (`-offer Sbot=ws://192.168.1.10:8780,<token file>`), or add it in the dashboard's Servers section. On the robot: QR screen → Next until Sbot → Connect.
 - **Pairing:** scan the robot's QR code, or type the 8-character code shown under it into the page. Pairing a Stack-chan also gives access to the devices linked to it.
 - **Leaving sbot:** "Move robot to" under the head buttons sends `server_switch`.
 - Flags: `-listen` (`:8780`), `-public-url` (default `http://<LAN IP>:8780`), `-token-file` (stackchan-server's robot token), `-state-file` (`~/.local/state/sbot/state.json`, mode 0600: pairings, known robots, names, safety limits), `-ui-dir`; the hub: `-hub-dir` (`~/.local/state/sbot/hub`, `""` = no hub), `-hub-listen` (`127.0.0.1:4222`), `-hub-token-file` (`~/.config/sbot/hub-token`, made if missing, mode 0600), `-loop-grant loop=command,…` (repeatable).
-- **Controller server:** `../stackchan-mj/sbot-controller-bg.sh start [shadow|live]`, `replay [24h]`, `stop`, `log`. Or directly: `go run ./cmd/sbot-controller -mode replay|shadow|live|stats`.
+- **Controller server:** `go run ./cmd/sbot-controller -mode replay|shadow|live|stats`.
+- **In the background on a LAN dev machine:** `sbot-bg.sh` and `sbot-controller-bg.sh` in [stackchan-mj](https://github.com/mj41/stackchan-mj) (with the repos cloned side by side).
 - Tests: `go test -race ./...` (fake workers over real WebSockets: pairing through the host, command checks, the camera switching on only while watched, the state file).
 
 ## Event hub and controller server
 
 sbot is the **web/API server** of the home node. Next to it run an **event hub** and a
-**controller server** (home-w42-eu architecture §5–§7).
+**controller server** (home-w42-eu [architecture](https://github.com/mj41/home-w42-eu/blob/main/docs/architecture.md) §5–§7).
 
 - **The hub** is NATS JetStream, embedded in sbot (`internal/hub`). It listens only on
   `127.0.0.1:4222`, with a token. Streams, 7 days each, size-capped:
@@ -69,8 +77,8 @@ Each device has a name and a room (the first piece of the home model), set under
 
 ## Page
 
-- **Stack-chan:** live camera (on only while someone watches), nod / shake / home, emotions, and moving the robot to another server.
-- **Car:** a hold-to-drive pad and WASD/arrow keys, where space stops; speed; headlights; sonar distance, line sensors, the micro:bit buttons, motor speeds, and the watchdog flag.
+- **Stack-chan:** live camera (on only while someone watches), a head pad, nod / shake / home, emotions, the LED strips, and moving the robot to another server.
+- **Car:** a joystick (speed by distance from the center), a hold-to-drive pad and WASD/arrow keys, where space stops; speed; headlights; sonar distance, line sensors, the micro:bit buttons, motor speeds, and the watchdog flag.
 - **Events** from all visible devices, including the commands browsers sent. `car_drive` (10 per second while driving), `look` and `ping` are not listed.
 
 **Safety stop** (`internal/app/safety.go`): no forward driving while the car's sonar sees something closer than the car's limit (default 10 cm; off, 5, 10, 15, 20 or 30 on the page, kept in the state file). A `car_drive` going forward on average, `(left + right) / 2 > 0`, is sent as `car_stop` instead (the answer is `{"status": "safety_stop", "cm", "limit_cm"}`). A car that reports moving forward inside the limit is stopped at once. Backward and turning on the spot stay allowed, so the car can always get away. The episode ends 3 cm past the limit, with one `safety_stop {cm, limit_cm}` event per episode. It uses only fresh readings (under 1.5 s) with an echo: with the sonar off, or nothing in range, there is no stop. Tested on the TPBot, 2026-10-01.
@@ -109,10 +117,18 @@ Browsers need the `sbot_session` cookie of a session paired with the robot (or w
 
 ## Status
 
-First version, 2026-10-01: browser → sbot → bridge → BLE → micro:bit works, and so does the telemetry coming back. Stack-chan connects. The micro:bit is not in the TPBot yet.
+Proof of concept, tested on real hardware on a LAN (2026-10-01/02): the micro:bit in the TPBot, driven from the browser through `tpbot-bridge` and through Stack-chan itself over BLE; the safety stop; the event hub, with the `frown` loop live.
 
-- **Trust:** one shared robot token, as in stackchan-server. Any worker with the token can claim `with` = any robot id. The `with` link should later be granted by the owner (`stackchan-mj/docs/design.md`).
-- **Next:** Stack-chan as the BLE central (car commands in its own capabilities), then reactions in sbot (e.g. the face on an obstacle), worked out from the raw data.
+- **Trust:** one shared robot token, as in stackchan-server. Any worker with the token can claim `with` = any robot id. The `with` link should later be granted by the owner ([trust design](https://github.com/mj41/stackchan-mj/blob/main/docs/design.md) in stackchan-mj).
+- **Next:** the home model with Home Assistant as a source, and more loops: home-w42-eu [fit and roadmap](https://github.com/mj41/home-w42-eu/blob/main/docs/fit-and-roadmap.md).
+
+## Related projects
+
+- [home-w42-eu](https://github.com/mj41/home-w42-eu): the vision, use cases and architecture that sbot grows into, and the device wire protocol. All the repos: [The repos today](https://github.com/mj41/home-w42-eu#the-repos-today).
+- [StackChan fork, branch `embody-mj41`](https://github.com/mj41/StackChan/tree/embody-mj41): the robot's firmware with Embody Mode, which can host the car over BLE.
+- [tpbot-ble](https://github.com/mj41/tpbot-ble): the car's micro:bit firmware and `tpbot-bridge`.
+- [stackchan-server](https://github.com/mj41/stackchan-server): the `wire` package sbot uses, and the full Stack-chan dashboard.
+- [stackchan-mj](https://github.com/mj41/stackchan-mj): scripts to run sbot in the background, and the trust design.
 
 ## License
 
