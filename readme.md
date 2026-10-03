@@ -4,19 +4,29 @@ An Embody Mode app server for a Stackchan and the devices that work with it. The
 
 Part of [home-w42-eu](https://github.com/mj41/home-w42-eu), a local first, privacy first platform for a home: sbot grows into its home node (web/API server, event hub, controller server). The robot runs Embody Mode from the [StackChan firmware fork](https://github.com/mj41/StackChan/tree/embody-mj41), and the car's micro:bit runs [tpbot-ble](https://github.com/mj41/tpbot-ble).
 
+**Usually: the robot drives the car.** Stackchan connects to the car's micro:bit over BLE
+itself, so everything runs on the robot's one Wi-Fi connection:
+
 ```
-micro:bit+TPBot ⇄ BLE ⇄ tpbot-bridge (laptop) ⇄ WS ⇄ sbot ⇄ WS ⇄ Stackchan
-                                                      ⇅ HTTP + SSE
-                                                   browser
-or:     micro:bit+TPBot ⇄ BLE ⇄ Stackchan ⇄ WS ⇄ sbot       (no bridge)
+browser ⇄ HTTP + SSE ⇄ sbot ⇄ WS ⇄ Stackchan ⇄ BLE ⇄ micro:bit in the TPBot
+```
+
+**Optional: a bridge near the car.** When the car is out of the robot's BLE range, a
+laptop or a Raspberry Pi close to the car runs `tpbot-bridge`, and the car becomes a
+device of its own, linked to the robot:
+
+```
+browser ⇄ HTTP + SSE ⇄ sbot ⇄ WS ⇄ Stackchan
+                        ⇅ WS
+                   tpbot-bridge (laptop, Raspberry Pi…) ⇄ BLE ⇄ micro:bit in the TPBot
 ```
 
 Every device is a `robot` worker of the [device wire protocol](https://github.com/mj41/home-w42-eu/blob/main/docs/wire-protocol.md), through the `wire` package of [stackchan-server](https://github.com/mj41/stackchan-server):
 
-- **A worker that lists `car_*` commands has a car.** Today that is `tpbot-bridge` (from [tpbot-ble](https://github.com/mj41/tpbot-ble)). Later it will be Stackchan itself, listing the same commands and telemetry, and nothing in sbot changes.
+- **A worker that lists `car_*` commands has a car:** Stackchan with the car on, or `tpbot-bridge` (from [tpbot-ble](https://github.com/mj41/tpbot-ble)). Both list the same commands and telemetry, so sbot does not care which one it is.
 - **The Register label `with` = `<robot id>` links a device to a robot.** Browsers paired with that robot also see and control the device. The bridge sets it with `-with stackchan-…`.
 - **The car is optional.** A Stackchan alone works, and so does a car alone (pair it with the URL the bridge logs).
-- **A Stackchan can host the car itself** over BLE (firmware `CONFIG_STACKCHAN_EMBODY_CAR`). It lists `car_enable`, and the page shows a "Car: off / on" button. While on, it lists the `car_*` commands and telemetry plus `car_connected`. The car panel is live only while `car_connected` is 1. Stop `tpbot-bridge` first, and disconnect the laptop (`bluetoothctl disconnect <addr>`): the micro:bit takes one BLE connection, and BlueZ keeps the link after the bridge exits.
+- **Stackchan hosts the car** over BLE (firmware `CONFIG_STACKCHAN_EMBODY_CAR`). It lists `car_enable`, and the page shows a "Car: off / on" button. While on, it lists the `car_*` commands and telemetry plus `car_connected`. The car panel is live only while `car_connected` is 1. The micro:bit takes one BLE connection: to switch from a bridge to the robot, stop `tpbot-bridge` and disconnect its machine (`bluetoothctl disconnect <addr>`), because BlueZ keeps the link after the bridge exits.
 
 > **A proof of concept, vibe coded.** Written with AI agents and tested on real hardware at
 > home, but neither the code nor its security has been reviewed by humans. Use it on your
@@ -31,7 +41,7 @@ Every device is a `robot` worker of the [device wire protocol](https://github.co
 go run ./cmd/sbot -loop-grant frown=emotion    # :8780, with the event hub
 go run ./cmd/sbot-controller -mode shadow       # the loops, decisions only (live: they act)
 
-# the car over this laptop's BLE, linked to a Stackchan:
+# optional, a bridge near the car (when it is out of the robot's BLE range):
 go install github.com/mj41/tpbot-ble/cmd/tpbot-bridge@latest
 tpbot-bridge -with stackchan-0a1b2c3d4e50
 ```
