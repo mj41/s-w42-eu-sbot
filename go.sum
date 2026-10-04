@@ -8,8 +8,8 @@ github.com/klauspost/compress v1.20.0 h1:a3C1ke2ohxFymNlb2HWAHjDeKCI90scRskErZkR
 github.com/klauspost/compress v1.20.0/go.mod h1:LUdAzn7YLVvxLpc7y3V1m40wESHTgc1422pwwBSKYuI=
 github.com/minio/highwayhash v1.0.4 h1:asJizugGgchQod2ja9NJlGOWq4s7KsAWr5XUc9Clgl4=
 github.com/minio/highwayhash v1.0.4/go.mod h1:GGYsuwP/fPD6Y9hMiXuapVvlIUEhFhMTh0rxU3ik1LQ=
-github.com/mj41/stackchan-server v0.4.0 h1:TD0IwFk5NztopXEwv+vTDLPgsAwtDmPVWF7cPCyef84=
-github.com/mj41/stackchan-server v0.4.0/go.mod h1:4Cn3vOYFNo4Duzw+0BVpk/LLUUOCjadXeCCmZpwTDrM=
+github.com/mj41/s-w42-eu-raw v0.11.0 h1:wwSIyVHqQ/xkrOAu7Kv55Sf4v+u/5LUx/8WLIRljOKk=
+github.com/mj41/s-w42-eu-raw v0.11.0/go.mod h1:hsgSi9FEk7vSkVeJ68ebsmvU5i4BCqJii73TWEZUF+w=
 github.com/nats-io/jwt/v2 v2.8.2 h1:XXRgB60MSTnqsRwejQurVDs/hcv2dkt+86GjI+I/bMc=
 github.com/nats-io/jwt/v2 v2.8.2/go.mod h1:Ag/56sq9OblL4JgdYufDd16Egb17Kr/8WwwuO/forVc=
 github.com/nats-io/nats-server/v2 v2.15.0 h1:M99yf0y05rTr46/qc/Is6ZAowI58Ryp2SjufLCUeVJc=
