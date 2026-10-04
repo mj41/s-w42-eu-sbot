@@ -9,10 +9,10 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
-	"github.com/mj41/stackchan-server/wire"
+	"github.com/mj41/s-w42-eu-raw/wire"
 )
 
-// Liveness timing, as in stackchan-server.
+// Liveness timing, as in s-w42-eu-raw.
 const (
 	pingPeriod      = 5 * time.Second
 	pongWait        = 60 * time.Second

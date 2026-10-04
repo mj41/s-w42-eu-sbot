@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/mj41/stackchan-server/wire"
+	"github.com/mj41/s-w42-eu-raw/wire"
 )
 
 // The state file keeps pairings and known robots across restarts. It holds

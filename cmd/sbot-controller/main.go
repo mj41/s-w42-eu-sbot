@@ -20,8 +20,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/mj41/sbot/internal/hub"
-	"github.com/mj41/sbot/internal/loops"
+	"github.com/mj41/s-w42-eu-sbot/internal/hub"
+	"github.com/mj41/s-w42-eu-sbot/internal/loops"
 )
 
 var known = map[string]func() loops.Loop{

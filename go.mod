@@ -1,10 +1,10 @@
-module github.com/mj41/sbot
+module github.com/mj41/s-w42-eu-sbot
 
 go 1.26.0
 
 require (
 	github.com/gorilla/websocket v1.5.3
-	github.com/mj41/stackchan-server v0.4.0
+	github.com/mj41/s-w42-eu-raw v0.11.0
 	github.com/nats-io/nats-server/v2 v2.15.0
 	github.com/nats-io/nats.go v1.54.0
 )

@@ -1,7 +1,7 @@
 // Package app is sbot: an Embody Mode app server that manages a Stackchan
 // and the devices that work with it, starting with a TPBot car.
 //
-// Every device is a "robot" worker (stackchan-server wire protocol). A worker
+// Every device is a "robot" worker (s-w42-eu-raw wire protocol). A worker
 // that lists car_* commands has a car. A worker with the Register label
 // "with" = <robot id> belongs to that robot: browsers paired with the robot
 // also see and drive it.
@@ -17,8 +17,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/mj41/sbot/internal/hub"
-	"github.com/mj41/stackchan-server/wire"
+	"github.com/mj41/s-w42-eu-sbot/internal/hub"
+	"github.com/mj41/s-w42-eu-raw/wire"
 )
 
 type Config struct {
@@ -219,7 +219,7 @@ func (a *App) addEvent(r *robot, ev eventView) {
 
 /* -------------------------------- pairing --------------------------------- */
 
-// Unambiguous characters only (no 0/O, 1/I), as in stackchan-server.
+// Unambiguous characters only (no 0/O, 1/I), as in s-w42-eu-raw.
 const codeAlphabet = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ"
 
 func newCode() string {

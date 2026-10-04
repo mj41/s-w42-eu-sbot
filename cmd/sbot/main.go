@@ -19,15 +19,15 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/mj41/sbot/internal/app"
-	"github.com/mj41/sbot/internal/hub"
+	"github.com/mj41/s-w42-eu-sbot/internal/app"
+	"github.com/mj41/s-w42-eu-sbot/internal/hub"
 )
 
 func main() {
 	var (
 		listen    = flag.String("listen", ":8780", "HTTP listen address for robots and browsers")
 		publicURL = flag.String("public-url", "", "base URL browsers use to reach sbot (default: http://<LAN IP>:<port>)")
-		tokenFile = flag.String("token-file", configFile("stackchan-server", "robot-token"), "file with the robot bearer token (the same as stackchan-server's, so it can offer sbot)")
+		tokenFile = flag.String("token-file", configFile("stackchan-server", "robot-token"), "file with the robot bearer token (the same as s-w42-eu-raw's, so it can offer sbot)")
 		pairTTL   = flag.Duration("pair-ttl", 5*time.Minute, "lifetime of a pairing code")
 		stateFile = flag.String("state-file", stateFile(), "JSON file that keeps pairings and robots across restarts (\"\" disables)")
 		uiDir     = flag.String("ui-dir", "", "development: serve index.html from this directory on every request (e.g. internal/app/ui)")

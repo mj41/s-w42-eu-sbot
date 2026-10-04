@@ -23,7 +23,7 @@ browser ⇄ HTTP + SSE ⇄ sbot ⇄ WS ⇄ Stackchan
                    tpbot-bridge (laptop, Raspberry Pi…) ⇄ BLE ⇄ micro:bit in the TPBot
 ```
 
-Every device is a `robot` worker of the [device wire protocol](https://github.com/mj41/home-w42-eu/blob/main/docs/wire-protocol.md), through the `wire` package of [stackchan-server](https://github.com/mj41/stackchan-server):
+Every device is a `robot` worker of the [device wire protocol](https://github.com/mj41/home-w42-eu/blob/main/docs/wire-protocol.md), through the `wire` package of [s-w42-eu-raw](https://github.com/mj41/s-w42-eu-raw):
 
 - **A worker that lists `car_*` commands has a car:** Stackchan with the car on, or `tpbot-bridge` (from [tpbot-ble](https://github.com/mj41/tpbot-ble)). Both list the same commands and telemetry, so sbot does not care which one it is.
 - **The Register label `with` = `<robot id>` links a device to a robot.** Browsers paired with that robot also see and control the device. The bridge sets it with `-with stackchan-…`.
@@ -38,7 +38,7 @@ Every device is a `robot` worker of the [device wire protocol](https://github.co
 > change when something better comes along, without migrations: update the robot's firmware
 > and the servers together.
 >
-> **Want more?** Ask in the [issues](https://github.com/mj41/sbot/issues), and ideally [sponsor mj41](https://github.com/sponsors/mj41) on GitHub:
+> **Want more?** Ask in the [issues](https://github.com/mj41/s-w42-eu-sbot/issues), and ideally [sponsor mj41](https://github.com/sponsors/mj41) on GitHub:
 > mj41 codes for attention food.
 
 ## Run
@@ -52,13 +52,12 @@ go install github.com/mj41/tpbot-ble/cmd/tpbot-bridge@latest
 tpbot-bridge -with stackchan-0a1b2c3d4e50
 ```
 
-- **Setting up the robot:** one click on [chan.w42.eu/setup](https://chan.w42.eu/setup) or your own stackchan-server's `/setup`, as in [SETUP.md](https://github.com/mj41/StackChan/blob/embody-mj41/firmware/main/apps/app_embody_mode/SETUP.md) in the firmware fork; for the car: [Optional: drive a TPBot car](https://github.com/mj41/StackChan/blob/embody-mj41/firmware/main/apps/app_embody_mode/SETUP.md#optional-drive-a-tpbot-car).
-- **Getting the robot to sbot:** a [stackchan-server](https://github.com/mj41/stackchan-server) offers sbot to its robots (`-offer Sbot=ws://192.168.1.10:8780,<token file>`), or add it in the dashboard's Servers section. On the robot: QR screen → Next until Sbot → Connect.
+- **Setting up the robot:** one click on [chan.w42.eu/setup](https://chan.w42.eu/setup) or your own s-w42-eu-raw's `/setup`, as in [SETUP.md](https://github.com/mj41/StackChan/blob/embody-mj41/firmware/main/apps/app_embody_mode/SETUP.md) in the firmware fork; for the car: [Optional: drive a TPBot car](https://github.com/mj41/StackChan/blob/embody-mj41/firmware/main/apps/app_embody_mode/SETUP.md#optional-drive-a-tpbot-car).
+- **Getting the robot to sbot:** a [s-w42-eu-raw](https://github.com/mj41/s-w42-eu-raw) offers sbot to its robots (`-offer Sbot=ws://192.168.1.10:8780,<token file>`), or add it in the dashboard's Servers section. On the robot: QR screen → Next until Sbot → Connect.
 - **Pairing:** scan the robot's QR code, or type the 8-character code shown under it into the page. Pairing a Stackchan also gives access to the devices linked to it.
 - **Leaving sbot:** "Move robot to" under the head buttons sends `server_switch`.
-- Flags: `-listen` (`:8780`), `-public-url` (default `http://<LAN IP>:8780`), `-token-file` (stackchan-server's robot token), `-pair-ttl` (`5m`), `-state-file` (`~/.local/state/sbot/state.json`, mode 0600: pairings, known robots, names, safety limits), `-ui-dir`; the hub: `-hub-dir` (`~/.local/state/sbot/hub`, `""` = no hub), `-hub-listen` (`127.0.0.1:4222`), `-hub-token-file` (`~/.config/sbot/hub-token`, made if missing, mode 0600), `-loop-grant loop=command,…` (repeatable).
+- Flags: `-listen` (`:8780`), `-public-url` (default `http://<LAN IP>:8780`), `-token-file` (s-w42-eu-raw's robot token), `-pair-ttl` (`5m`), `-state-file` (`~/.local/state/sbot/state.json`, mode 0600: pairings, known robots, names, safety limits), `-ui-dir`; the hub: `-hub-dir` (`~/.local/state/sbot/hub`, `""` = no hub), `-hub-listen` (`127.0.0.1:4222`), `-hub-token-file` (`~/.config/sbot/hub-token`, made if missing, mode 0600), `-loop-grant loop=command,…` (repeatable).
 - **Controller server:** `go run ./cmd/sbot-controller -mode replay|shadow|live|stats`.
-- **In the background on a LAN dev machine:** `sbot-bg.sh` and `sbot-controller-bg.sh` in [stackchan-mj](https://github.com/mj41/stackchan-mj) (with the repos cloned side by side).
 - Tests: `go test -race ./...` (fake workers over real WebSockets: pairing through the host, command checks, the camera switching on only while watched, the state file).
 
 ## Event hub and controller server
@@ -144,7 +143,7 @@ Browsers need the `sbot_session` cookie of a session paired with the robot (or w
 
 Proof of concept, tested on real hardware on a LAN: the micro:bit in the TPBot, driven from the browser through `tpbot-bridge` and through Stackchan itself over BLE; the safety stop; the event hub, with the `frown` loop live.
 
-- **Trust:** sbot accepts only the shared robot token (stackchan-server also has per-robot tokens). Any worker with the token can claim `with` = any robot id. The `with` link should later be granted by the owner ([trust design](https://github.com/mj41/stackchan-mj/blob/main/docs/design.md) in stackchan-mj).
+- **Trust:** sbot accepts only the shared robot token (s-w42-eu-raw also has per-robot tokens). Any worker with the token can claim `with` = any robot id. The `with` link should later be granted by the owner ([trust design](https://github.com/mj41/stackchan-mj/blob/main/docs/design.md) in stackchan-mj).
 - **Next:** the home model with Home Assistant as a source, and more loops: home-w42-eu [fit and roadmap](https://github.com/mj41/home-w42-eu/blob/main/docs/fit-and-roadmap.md).
 
 ## Related projects
@@ -152,8 +151,10 @@ Proof of concept, tested on real hardware on a LAN: the micro:bit in the TPBot, 
 - [home-w42-eu](https://github.com/mj41/home-w42-eu): the vision, use cases and architecture that sbot grows into, and the device wire protocol. All the repos: [The repos today](https://github.com/mj41/home-w42-eu#the-repos-today).
 - [StackChan fork, branch `embody-mj41`](https://github.com/mj41/StackChan/tree/embody-mj41): the robot's firmware with Embody Mode, which can host the car over BLE.
 - [tpbot-ble](https://github.com/mj41/tpbot-ble): the car's micro:bit firmware and `tpbot-bridge`.
-- [stackchan-server](https://github.com/mj41/stackchan-server): the `wire` package sbot uses, and the full Stackchan dashboard.
-- [stackchan-mj](https://github.com/mj41/stackchan-mj): scripts to run sbot in the background, and the trust design.
+- [s-w42-eu-raw](https://github.com/mj41/s-w42-eu-raw): the `wire` package sbot uses, and the full Stackchan dashboard.
+- The Stackchan [trust design](https://github.com/mj41/home-w42-eu/blob/main/docs/implementations/stackchan-trust.md).
+
+Stack-chan (スタックチャン) is a registered trademark of Shinya Ishikawa; this project is independent and only made to work with [Stack-chan](https://github.com/stack-chan/stack-chan) robots.
 
 ## License
 

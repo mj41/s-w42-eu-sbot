@@ -1,6 +1,6 @@
 package loops
 
-import "github.com/mj41/sbot/internal/hub"
+import "github.com/mj41/s-w42-eu-sbot/internal/hub"
 
 // Frown: the robot looks sad while its car is blocked by an obstacle, and neutral
 // again when it is clear (home-w42-eu use case 3). It reads the safety controller's

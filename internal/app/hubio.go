@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/mj41/sbot/internal/hub"
+	"github.com/mj41/s-w42-eu-sbot/internal/hub"
 	"github.com/nats-io/nats.go"
 )
 

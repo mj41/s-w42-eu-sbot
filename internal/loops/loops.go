@@ -17,7 +17,7 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/mj41/sbot/internal/hub"
+	"github.com/mj41/s-w42-eu-sbot/internal/hub"
 )
 
 // Loop is one behaviour: it gets the events on its subjects, in order.

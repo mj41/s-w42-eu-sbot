@@ -8,9 +8,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/mj41/sbot/internal/hub"
-	"github.com/mj41/sbot/internal/loops"
-	"github.com/mj41/stackchan-server/wire"
+	"github.com/mj41/s-w42-eu-sbot/internal/hub"
+	"github.com/mj41/s-w42-eu-sbot/internal/loops"
+	"github.com/mj41/s-w42-eu-raw/wire"
 )
 
 // A Stackchan hosting the car, as with car_enable: car commands and a face.
