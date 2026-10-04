@@ -52,11 +52,11 @@ go install github.com/mj41/tpbot-ble/cmd/tpbot-bridge@latest
 tpbot-bridge -with stackchan-0a1b2c3d4e50
 ```
 
-- **Setting up the robot:** [SETUP.md](https://github.com/mj41/StackChan/blob/embody-mj41/firmware/main/apps/app_embody_mode/SETUP.md) in the firmware fork; for the car, its step 8.
+- **Setting up the robot:** one click on [chan.w42.eu/setup](https://chan.w42.eu/setup) or your own stackchan-server's `/setup`, as in [SETUP.md](https://github.com/mj41/StackChan/blob/embody-mj41/firmware/main/apps/app_embody_mode/SETUP.md) in the firmware fork; for the car: [Optional: drive a TPBot car](https://github.com/mj41/StackChan/blob/embody-mj41/firmware/main/apps/app_embody_mode/SETUP.md#optional-drive-a-tpbot-car).
 - **Getting the robot to sbot:** a [stackchan-server](https://github.com/mj41/stackchan-server) offers sbot to its robots (`-offer Sbot=ws://192.168.1.10:8780,<token file>`), or add it in the dashboard's Servers section. On the robot: QR screen → Next until Sbot → Connect.
 - **Pairing:** scan the robot's QR code, or type the 8-character code shown under it into the page. Pairing a Stackchan also gives access to the devices linked to it.
 - **Leaving sbot:** "Move robot to" under the head buttons sends `server_switch`.
-- Flags: `-listen` (`:8780`), `-public-url` (default `http://<LAN IP>:8780`), `-token-file` (stackchan-server's robot token), `-state-file` (`~/.local/state/sbot/state.json`, mode 0600: pairings, known robots, names, safety limits), `-ui-dir`; the hub: `-hub-dir` (`~/.local/state/sbot/hub`, `""` = no hub), `-hub-listen` (`127.0.0.1:4222`), `-hub-token-file` (`~/.config/sbot/hub-token`, made if missing, mode 0600), `-loop-grant loop=command,…` (repeatable).
+- Flags: `-listen` (`:8780`), `-public-url` (default `http://<LAN IP>:8780`), `-token-file` (stackchan-server's robot token), `-pair-ttl` (`5m`), `-state-file` (`~/.local/state/sbot/state.json`, mode 0600: pairings, known robots, names, safety limits), `-ui-dir`; the hub: `-hub-dir` (`~/.local/state/sbot/hub`, `""` = no hub), `-hub-listen` (`127.0.0.1:4222`), `-hub-token-file` (`~/.config/sbot/hub-token`, made if missing, mode 0600), `-loop-grant loop=command,…` (repeatable).
 - **Controller server:** `go run ./cmd/sbot-controller -mode replay|shadow|live|stats`.
 - **In the background on a LAN dev machine:** `sbot-bg.sh` and `sbot-controller-bg.sh` in [stackchan-mj](https://github.com/mj41/stackchan-mj) (with the repos cloned side by side).
 - Tests: `go test -race ./...` (fake workers over real WebSockets: pairing through the host, command checks, the camera switching on only while watched, the state file).
@@ -104,13 +104,13 @@ Each device has a name and a room (the first piece of the home model), set under
 - **Car:** a joystick (speed by distance from the center), a hold-to-drive pad and WASD/arrow keys, where space stops; speed; headlights; sonar distance, line sensors, the micro:bit buttons, motor speeds, and the watchdog flag.
 - **Events** from all visible devices, including the commands browsers sent. `car_drive` (10 per second while driving), `look` and `ping` are not listed.
 
-**Safety stop** (`internal/app/safety.go`): no forward driving while the car's sonar sees something closer than the car's limit (default 10 cm; off, 5, 10, 15, 20 or 30 on the page, kept in the state file). A `car_drive` going forward on average, `(left + right) / 2 > 0`, is sent as `car_stop` instead (the answer is `{"status": "safety_stop", "cm", "limit_cm"}`). A car that reports moving forward inside the limit is stopped at once. Backward and turning on the spot stay allowed, so the car can always get away. The episode ends 3 cm past the limit, with one `safety_stop {cm, limit_cm}` event per episode. It uses only fresh readings (under 1.5 s) with an echo: with the sonar off, or nothing in range, there is no stop. Tested on the TPBot, 2026-10-01.
+**Safety stop** (`internal/app/safety.go`): no forward driving while the car's sonar sees something closer than the car's limit (default 10 cm; off, 5, 10, 15, 20 or 30 on the page, kept in the state file). A `car_drive` going forward on average, `(left + right) / 2 > 0`, is sent as `car_stop` instead (the answer is `{"status": "safety_stop", "cm", "limit_cm"}`). A car that reports moving forward inside the limit is stopped at once. Backward and turning on the spot stay allowed, so the car can always get away. The episode ends 3 cm past the limit, with one `safety_stop {cm, limit_cm}` event per episode. It uses only fresh readings (under 1.5 s) with an echo: with the sonar off, or nothing in range, there is no stop.
 
 **Driving:** the page sends `car_drive` every 100 ms while a button or key is held, and `car_stop` on release. The micro:bit stops on its own 500 ms after the last `car_drive`, so a closed tab, a lost Wi-Fi link or a lost BLE link stops the car.
 
 ## Car capability
 
-These are the names a car worker uses, whether it is the bridge or, later, Stackchan.
+These are the names a car worker uses, whether it is the bridge or Stackchan.
 
 | Command | Args |
 |---|---|
@@ -137,12 +137,14 @@ Browsers need the `sbot_session` cookie of a session paired with the robot (or w
 | `POST /api/robots/{id}/safety` | `{"cm": 0\|5\|10\|15\|20\|30}`: the car's safety stop limit (0 = off) |
 | `POST /api/robots/{id}/command` | `{"command", "args"}`; only commands the robot lists, never the server's own (`camera`, `mic`, `*_stream`) |
 | `GET /api/robots/{id}/media?video=1` | WebSocket of binary camera frames (`0x01` + JPEG) |
+| `GET /api/robots/{id}/snapshot` | the latest full-resolution still (JPEG) after a `snapshot` command |
+| `GET /healthz` | `ok`, for health checks |
 
 ## Status
 
-Proof of concept, tested on real hardware on a LAN (2026-10-01/02): the micro:bit in the TPBot, driven from the browser through `tpbot-bridge` and through Stackchan itself over BLE; the safety stop; the event hub, with the `frown` loop live.
+Proof of concept, tested on real hardware on a LAN: the micro:bit in the TPBot, driven from the browser through `tpbot-bridge` and through Stackchan itself over BLE; the safety stop; the event hub, with the `frown` loop live.
 
-- **Trust:** one shared robot token, as in stackchan-server. Any worker with the token can claim `with` = any robot id. The `with` link should later be granted by the owner ([trust design](https://github.com/mj41/stackchan-mj/blob/main/docs/design.md) in stackchan-mj).
+- **Trust:** sbot accepts only the shared robot token (stackchan-server also has per-robot tokens). Any worker with the token can claim `with` = any robot id. The `with` link should later be granted by the owner ([trust design](https://github.com/mj41/stackchan-mj/blob/main/docs/design.md) in stackchan-mj).
 - **Next:** the home model with Home Assistant as a source, and more loops: home-w42-eu [fit and roadmap](https://github.com/mj41/home-w42-eu/blob/main/docs/fit-and-roadmap.md).
 
 ## Related projects
