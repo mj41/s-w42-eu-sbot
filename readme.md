@@ -1,6 +1,8 @@
 # sbot
 
-An Embody Mode app server for a Stackchan and the devices that work with it. The first such device is an ELECFREAKS TPBot car with a micro:bit. On one page you see through Stackchan's camera and drive the car.
+An Embody Mode app server for a Stackchan and the devices that work with it. The first such device is an [ELECFREAKS TPBot](https://shop.elecfreaks.com/blogs/tutorials/tpbot-creative-programming-guide) car with a [micro:bit](https://microbit.org/), which runs [tpbot-ble](https://github.com/mj41/tpbot-ble). On one page you see through Stackchan's camera and drive the car.
+
+<img src="docs/img/cockpit.png" width="640" alt="sbot's cockpit: the robot's camera, a joystick for the car, head pad and lights">
 
 Part of [home-w42-eu](https://github.com/mj41/home-w42-eu), a local first, privacy first platform for a home: sbot grows into its home node (web/API server, event hub, controller server). The robot runs Embody Mode from the [StackChan firmware fork](https://github.com/mj41/StackChan/tree/embody-mj41), and the car's micro:bit runs [tpbot-ble](https://github.com/mj41/tpbot-ble).
 
