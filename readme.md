@@ -34,6 +34,10 @@ Every device is a `robot` worker of the [device wire protocol](https://github.co
 > home, but neither the code nor its security has been reviewed by humans. Use it on your
 > own network, and don't trust it with anything private yet.
 >
+> **Early stage: no backward compatibility.** Protocols, APIs, file formats and stored settings
+> change when something better comes along, without migrations: update the robot's firmware
+> and the servers together.
+>
 > **Want more?** Ask in the [issues](https://github.com/mj41/sbot/issues), and ideally [sponsor mj41](https://github.com/sponsors/mj41) on GitHub:
 > mj41 codes for attention food.
 
