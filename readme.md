@@ -41,6 +41,18 @@ Every device is a `robot` worker of the [device wire protocol](https://github.co
 > **Want more?** Ask in the [issues](https://github.com/mj41/s-w42-eu-sbot/issues), and ideally [sponsor mj41](https://github.com/sponsors/mj41) on GitHub:
 > mj41 codes for attention food.
 
+## How the pieces fit
+
+| Piece | What it is | Needed? |
+|---|---|---|
+| **Robot** | a Stackchan with the [Embody Mode firmware](https://github.com/mj41/StackChan/tree/embody-mj41/firmware/main/apps/app_embody_mode). On its screen the **app switcher** (the QR screen: Next, Connect) lists its apps and switches between them; its gear opens the **Manager screen** (which manager it has, turn it off or on). | yes |
+| **Apps** | servers the robot connects to, one at a time: [Raw data](https://github.com/mj41/s-w42-eu-raw), [Pet](https://github.com/mj41/s-w42-eu-pet), Sbot (this repo), … | at least one |
+| **Phone or browser** | opens an app's page and pairs with the robot by scanning its QR code; with end-to-end encryption only paired browsers can read the robot | to use an app |
+| **Manager** | [s-w42-eu-manager](https://github.com/mj41/s-w42-eu-manager): the web service that sets robots up over USB, gives each robot its own token per app, and switches and changes apps from its page; on your own computer (the home manager) or online at [sm.w42.eu](https://sm.w42.eu), which a home manager may link to | optional: without it, apps are written over USB and switched on the robot's app switcher |
+
+"Manager" always means this web service; on the robot there is only the app switcher and the
+Manager screen that shows which manager it has.
+
 ## Run
 
 ```bash
